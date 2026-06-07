@@ -28,6 +28,8 @@ tests/fixtures/*.pdf
 # 산출물 / 캐시
 parsed/
 artifacts/
+vault/
+data/vault/
 notebooks/.ipynb_checkpoints/
 crossref_cache.json
 processed.jsonl
