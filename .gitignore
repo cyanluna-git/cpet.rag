@@ -30,6 +30,7 @@ parsed/
 artifacts/
 notebooks/.ipynb_checkpoints/
 crossref_cache.json
+processed.jsonl
 
 # OS / IDE
 .DS_Store
