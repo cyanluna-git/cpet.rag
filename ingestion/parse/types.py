@@ -75,3 +75,8 @@ class ParsedDoc(BaseModel):
     TODO: LOW_CONFIDENCE_THRESHOLD(현재 0.5)는 코퍼스 특성에 따라 조정 필요.
     신뢰도 지표는 parse_score, layout_score 중 낮은 값을 기준으로 사용한다.
     """
+
+    vlm_pages: list[int] = Field(default_factory=list)
+    """VLM 폴백으로 재추출된 페이지 번호 목록 (1-based).
+    apply_vlm_fallback() 이 처리한 페이지가 여기 기록된다.
+    """
