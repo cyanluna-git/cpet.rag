@@ -16,7 +16,9 @@ dependencies = [
 ingestion = [
   "llama-index>=0.12",   # 오케스트레이션
   "docling>=2.0",        # PDF 파싱
-  "lancedb>=0.15",       # 벡터스토어
+]
+vectorstore = [
+  "lancedb>=0.15",       # 벡터스토어 (local + S3-ready)
 ]
 serving = [
   "fastapi>=0.115",
