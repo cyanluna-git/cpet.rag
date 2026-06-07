@@ -22,6 +22,9 @@ lancedb/
 *.parquet
 data/raw/
 
+# 테스트 픽스처 PDF (저작권 보호 자산 — 커밋 금지)
+tests/fixtures/*.pdf
+
 # 산출물 / 캐시
 parsed/
 artifacts/
