@@ -2,39 +2,53 @@
 name = "cpet-rag"
 version = "0.1.0"
 description = "운동생리·CPET 학술 문헌 RAG 서비스 (AWS 서버형)"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-  # 오케스트레이션
-  "llama-index>=0.12",
-  # 파싱
-  "docling>=2.0",
-  # 벡터스토어
-  "lancedb>=0.15",
-  # 서빙
-  "fastapi>=0.115",
-  "uvicorn>=0.32",
+  # 설정·환경
   "pydantic>=2.9",
   "pydantic-settings>=2.6",
-  # AWS / LLM
-  "boto3>=1.35",            # Bedrock·S3
-  # 평가
-  "ragas>=0.2",
-  # 유틸
-  "httpx>=0.27",
   "python-dotenv>=1.0",
+  # HTTP 클라이언트 (메타 보강 등)
+  "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
-gpu = ["torch", "transformers", "sentence-transformers"]   # 임베딩 self-host (Colab/Batch)
-dev = ["pytest>=8", "ruff>=0.7", "black>=24"]
+ingestion = [
+  "llama-index>=0.12",   # 오케스트레이션
+  "docling>=2.0",        # PDF 파싱
+  "lancedb>=0.15",       # 벡터스토어
+]
+serving = [
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+]
+aws = [
+  "boto3>=1.35",         # Bedrock·S3
+]
+eval = [
+  "ragas>=0.2",
+]
+gpu = [
+  "torch",
+  "transformers",
+  "sentence-transformers",  # 임베딩 self-host (Colab/Batch)
+]
+dev = [
+  "pytest>=8",
+  "ruff>=0.7",
+  "black>=24",
+]
+
+[tool.uv]
+package = false
 
 [tool.black]
 line-length = 100
-target-version = ["py311"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
