@@ -35,3 +35,4 @@ crossref_cache.json
 
 # logs
 *.log
+docs/.card-ids.txt
