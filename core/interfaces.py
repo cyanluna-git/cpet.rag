@@ -1,25 +1,26 @@
 """core.interfaces — 공통 인터페이스 Protocol 스텁.
 
 구체 구현 없음 — 시그니처·타입힌트만 정의한다.
-#3110 schemas 확정 전까지 chunk 타입은 dict[str, Any]를 사용한다.
 """
 
 from typing import Any, Protocol, runtime_checkable
+
+from core.models import Chunk, RetrievedChunk
 
 
 @runtime_checkable
 class VectorStore(Protocol):
     """벡터스토어 추상 인터페이스 (LanceDB·OpenSearch·pgvector 교체 대비)."""
 
-    def upsert(self, chunks: list[dict[str, Any]]) -> None:
+    def upsert(self, chunks: list[Chunk]) -> None:
         """청크 목록을 저장/갱신한다."""
         ...
 
-    def search(self, vector: list[float], top_k: int) -> list[dict[str, Any]]:
+    def search(self, vector: list[float], top_k: int) -> list[RetrievedChunk]:
         """벡터 유사도 검색 후 top_k 청크를 반환한다."""
         ...
 
-    def fts(self, query: str, top_k: int) -> list[dict[str, Any]]:
+    def fts(self, query: str, top_k: int) -> list[RetrievedChunk]:
         """Full-text search 후 top_k 청크를 반환한다."""
         ...
 
