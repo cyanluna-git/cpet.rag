@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cpet-rag"
 version = "0.1.0"
@@ -42,8 +46,8 @@ dev = [
   "black>=24",
 ]
 
-[tool.uv]
-package = false
+[tool.setuptools.packages.find]
+include = ["core*", "ingestion*", "eval*"]
 
 [tool.black]
 line-length = 100
