@@ -206,8 +206,9 @@ class BedrockTranslator:
             "cardiopulmonary exercise testing (CPET), and sports medicine.\n"
             "Rules:\n"
             "1. Translate the user text from {src} to {tgt} accurately.\n"
-            "2. Preserve ALL ⟦Tn⟧ tokens EXACTLY — do not translate, rephrase, "
-            "or split them. They are protected terminology placeholders.\n"
+            "2. Preserve ALL ⟦Tn⟧ and ⟦Cn⟧ tokens EXACTLY — do not translate, rephrase, "
+            "or split them. They are protected placeholders (⟦Tn⟧ = terminology, "
+            "⟦Cn⟧ = citation tag). Output them verbatim without any modification.\n"
             "3. Use formal academic register appropriate for medical/scientific literature.\n"
             "4. Output ONLY the translated text, no commentary."
         ).format(src=src_label, tgt=tgt_label)
