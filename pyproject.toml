@@ -44,6 +44,7 @@ dev = [
   "pytest>=8",
   "ruff>=0.7",
   "black>=24",
+  "nbformat>=5",  # notebook 유효성 검증 (AC 체크)
 ]
 
 [tool.setuptools.packages.find]

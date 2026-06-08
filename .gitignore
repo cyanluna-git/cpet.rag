@@ -34,6 +34,9 @@ notebooks/.ipynb_checkpoints/
 crossref_cache.json
 processed.jsonl
 
+# 인입 실패 목록 (운영 산출물 — 커밋 금지)
+data/ingest_failures.csv
+
 # OS / IDE
 .DS_Store
 .idea/
