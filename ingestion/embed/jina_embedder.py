@@ -256,6 +256,27 @@ class JinaEmbedder:
 
         return results
 
+    def _embed_query_call(self, texts: list[str]) -> list[list[float]]:
+        """쿼리 임베딩 API 호출 (배치 분할). 테스트에서 이 메서드를 mock 한다."""
+        if self.backend == "local":
+            return self._local_encode(texts)
+        if not self.api_key:
+            raise ValueError("JinaEmbedder: jina_api_key 가 설정되지 않았습니다.")
+        out: list[list[float]] = []
+        for batch in self._windows_by_chars(texts, self._STD_BATCH_CHARS):
+            out.extend(
+                self._post_jina(
+                    {
+                        "model": self.model,
+                        "task": "retrieval.query",
+                        "input": batch,
+                        "dimensions": self.dim,
+                    },
+                    timeout=120.0,
+                )
+            )
+        return out
+
     # ------------------------------------------------------------------
     # Public interface (satisfies core.interfaces.Embedder)
     # ------------------------------------------------------------------
@@ -291,6 +312,15 @@ class JinaEmbedder:
         logger.debug("JinaEmbedder.embed_late: %d boundaries", len(boundaries))
         texts = [document[s:e] for s, e in boundaries]
         return self._embed_late_call(texts)
+
+    def embed_query(self, texts: list[str]) -> list[list[float]]:
+        """쿼리 텍스트를 임베딩 벡터로 변환한다 (task="retrieval.query").
+
+        패시지 임베딩(embed)과 달리 쿼리에 최적화된 task 파라미터를 사용한다.
+        Jina-embeddings-v3 에서 task 에 따라 다른 LoRA 어댑터가 적용된다.
+        """
+        logger.debug("JinaEmbedder.embed_query: %d texts", len(texts))
+        return self._embed_query_call(texts)
 
     def embed_chunks(
         self,

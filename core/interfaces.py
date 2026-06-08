@@ -39,6 +39,10 @@ class Embedder(Protocol):
         """Late Chunking: document 전체 컨텍스트 기반으로 각 boundary 구간의 벡터를 반환한다."""
         ...
 
+    def embed_query(self, texts: list[str]) -> list[list[float]]:
+        """쿼리 텍스트를 임베딩 벡터로 변환한다 (task="retrieval.query")."""
+        ...
+
 
 @runtime_checkable
 class LLMClient(Protocol):
