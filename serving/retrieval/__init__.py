@@ -2,11 +2,13 @@
 
 from serving.retrieval.glossary import EN2KO_GLOSSARY, KO2EN_GLOSSARY
 from serving.retrieval.hybrid import HybridRetriever
+from serving.retrieval.rerank import Reranker
 from serving.retrieval.translate import BedrockTranslator
 
 __all__ = [
     "BedrockTranslator",
     "HybridRetriever",
+    "Reranker",
     "KO2EN_GLOSSARY",
     "EN2KO_GLOSSARY",
 ]
