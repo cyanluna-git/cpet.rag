@@ -83,65 +83,89 @@ class JinaEmbedder:
     # Internal: API calls (mockable in tests)
     # ------------------------------------------------------------------
 
-    def _embed_call(self, texts: list[str]) -> list[list[float]]:
-        """표준 임베딩 API 호출. 테스트에서 이 메서드를 mock 한다.
+    # Jina v3 컨텍스트 = 8192 토큰. late chunking 은 입력을 이어붙여 한 컨텍스트에
+    # 넣으므로 윈도우 합이 한도를 넘으면 400. 보수적으로 char 예산으로 분할한다.
+    _LATE_WINDOW_CHARS = 20000   # ~5-6k 토큰 (8192 한도 아래)
+    _STD_BATCH_CHARS = 60000     # 표준 요청 토큰 상한 회피
 
-        API: POST /v1/embeddings, task=retrieval.passage.
-        Local: sentence-transformers encode.
-        """
-        if self.backend == "local":
-            return self._local_encode(texts)
-
-        # API backend
-        if not self.api_key:
-            raise ValueError("JinaEmbedder: jina_api_key 가 설정되지 않았습니다.")
-
-        payload: dict[str, Any] = {
-            "model": self.model,
-            "task": "retrieval.passage",
-            "input": texts,
-            "dimensions": self.dim,
-        }
+    def _post_jina(self, payload: dict[str, Any], timeout: float = 180.0) -> list[list[float]]:
+        """Jina embeddings POST. 4xx 시 응답 본문을 포함해 명확히 raise."""
         response = httpx.post(
             JINA_EMBEDDINGS_URL,
             json=payload,
             headers={"Authorization": f"Bearer {self.api_key}"},
-            timeout=120.0,
+            timeout=timeout,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Jina API {response.status_code} for {JINA_EMBEDDINGS_URL}: "
+                f"{response.text[:600]}"
+            )
         data = response.json()
         return [item["embedding"] for item in data["data"]]
 
-    def _embed_late_call(self, texts: list[str]) -> list[list[float]]:
-        """Late Chunking API 호출. 테스트에서 이 메서드를 mock 한다.
+    @staticmethod
+    def _windows_by_chars(texts: list[str], budget: int) -> list[list[str]]:
+        """연속 texts 를 누적 char 예산 단위로 묶는다 (순서 보존)."""
+        groups: list[list[str]] = []
+        cur: list[str] = []
+        clen = 0
+        for t in texts:
+            if cur and clen + len(t) > budget:
+                groups.append(cur)
+                cur, clen = [], 0
+            cur.append(t)
+            clen += len(t)
+        if cur:
+            groups.append(cur)
+        return groups
 
-        API: POST /v1/embeddings with late_chunking=true.
-            Jina 가 texts 를 연결해 full-context 임베딩을 수행한다.
-        Local: tokenize full doc → forward → token embeddings → mean-pool.
+    def _embed_call(self, texts: list[str]) -> list[list[float]]:
+        """표준 임베딩 API 호출 (배치 분할). 테스트에서 이 메서드를 mock 한다."""
+        if self.backend == "local":
+            return self._local_encode(texts)
+        if not self.api_key:
+            raise ValueError("JinaEmbedder: jina_api_key 가 설정되지 않았습니다.")
+        out: list[list[float]] = []
+        for batch in self._windows_by_chars(texts, self._STD_BATCH_CHARS):
+            out.extend(
+                self._post_jina(
+                    {
+                        "model": self.model,
+                        "task": "retrieval.passage",
+                        "input": batch,
+                        "dimensions": self.dim,
+                    },
+                    timeout=120.0,
+                )
+            )
+        return out
+
+    def _embed_late_call(self, texts: list[str]) -> list[list[float]]:
+        """Late Chunking API 호출. 컨텍스트(8192토큰)를 넘지 않도록 윈도우 분할 후
+        각 윈도우를 late_chunking=true 로 호출(윈도우 내 청크끼리 full-context 공유).
+        테스트에서 이 메서드를 mock 한다.
         """
         if self.backend == "local":
             return self._local_late_encode(texts)
-
-        # API backend
         if not self.api_key:
             raise ValueError("JinaEmbedder: jina_api_key 가 설정되지 않았습니다.")
-
-        payload: dict[str, Any] = {
-            "model": self.model,
-            "task": "retrieval.passage",
-            "late_chunking": True,
-            "input": texts,
-            "dimensions": self.dim,
-        }
-        response = httpx.post(
-            JINA_EMBEDDINGS_URL,
-            json=payload,
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            timeout=180.0,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return [item["embedding"] for item in data["data"]]
+        windows = self._windows_by_chars(texts, self._LATE_WINDOW_CHARS)
+        logger.info("late chunking: %d chunks → %d windows", len(texts), len(windows))
+        out: list[list[float]] = []
+        for window in windows:
+            out.extend(
+                self._post_jina(
+                    {
+                        "model": self.model,
+                        "task": "retrieval.passage",
+                        "late_chunking": True,
+                        "input": window,
+                        "dimensions": self.dim,
+                    }
+                )
+            )
+        return out
 
     # ------------------------------------------------------------------
     # Local backend helpers (lazy import)
