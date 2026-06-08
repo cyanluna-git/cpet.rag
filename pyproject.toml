@@ -47,7 +47,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["core*", "ingestion*", "eval*"]
+include = ["core*", "ingestion*", "eval*", "serving*"]
 
 [tool.black]
 line-length = 100
