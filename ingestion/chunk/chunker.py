@@ -36,6 +36,24 @@ logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# 비본문 섹션 필터 (RAG 노이즈 제거)
+# ---------------------------------------------------------------------------
+# References/참고문헌 등은 인용 목록이라 QA 근거로 부적합하고 청크 수를 부풀려
+# 검색을 오염시킨다. 헤딩이 아래 패턴으로 시작하는 섹션은 청킹에서 제외한다.
+_SKIP_SECTION_RE = re.compile(
+    r"^\s*(references?|bibliography|literature\s+cited|works\s+cited|참고\s*문헌"
+    r"|acknowledge?ments?|author\s+contributions?|conflicts?\s+of\s+interest"
+    r"|competing\s+interests?|funding|declarations?|supplementary)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_skippable_section(heading: str | None) -> bool:
+    """References·보일러플레이트 섹션이면 True (청킹 제외)."""
+    return bool(heading and _SKIP_SECTION_RE.match(heading.strip()))
+
+
+# ---------------------------------------------------------------------------
 # Token counting
 # ---------------------------------------------------------------------------
 
@@ -187,9 +205,22 @@ def chunk_document(
     Returns:
         Chunk 목록 (chunk_index 0-based 연속).
     """
-    sections = parsed.sections
-    if not sections:
+    all_sections = parsed.sections
+    if not all_sections:
         logger.warning("chunk_document: ParsedDoc.sections 가 비어있습니다 (doi=%s)", paper.doi)
+        return []
+
+    # References·보일러플레이트 섹션 제외 (RAG 노이즈)
+    sections = [s for s in all_sections if not _is_skippable_section(s.heading)]
+    n_skipped = len(all_sections) - len(sections)
+    if n_skipped:
+        logger.info(
+            "chunk_document: %d개 비본문 섹션 제외 (references 등), %d개 본문 섹션 청킹",
+            n_skipped,
+            len(sections),
+        )
+    if not sections:
+        logger.warning("chunk_document: 본문 섹션이 없습니다 (doi=%s)", paper.doi)
         return []
 
     chunks: list[Chunk] = []
